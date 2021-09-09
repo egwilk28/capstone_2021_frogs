@@ -37,3 +37,18 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+.DS_store
+
+# ignore folders
+20*/
+data*/
+literature/
+*figure*/
+
+# ignore outputs
+*.html
+*.pdf
+
+# ignore random files
+notes*
