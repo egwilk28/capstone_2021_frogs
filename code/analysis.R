@@ -82,7 +82,15 @@ summarydf %>%
     group_by(treatment) %>%
     get_summary_stats(call_rate, type = "mean_sd") #get mean call rate and sd of treatments
 
-bxp <- ggboxplot(summarydf, x = "treatment", y = "call_rate", xlab = "Treatment", ylab = "Call rate", main = "Call rates before, during, and after noise events at ASP", order = c("RateBefore", "RateDuring", "RateAfter"), ggtheme = theme_gray()) # create boxplot of treatments
+bxp <- ggboxplot(summarydf,
+                 x = "treatment",
+                 y = "call_rate",
+                 xlab = "Treatment",
+                 ylab = "Call rate",
+                 main = "Call Rates Before, During, and After Noise Events at ASP",
+                 order = c("RateBefore", "RateDuring", "RateAfter"),
+                 font.label = list(size = 26, color = "black"),
+                 ggtheme = theme_gray()) # create boxplot of treatments
 bxp
 
 
@@ -106,6 +114,38 @@ get_anova_table(aov.test)
 #Ha:m asp < m gtm
 
 #summarize and visualize data
-
 ttestdf <- read.csv("./data_raw/2_samp_ttest_df.csv", header = TRUE)
 
+#summary stats
+group_by(ttestdf, Site) %>%
+    summarise(
+        count = n(),
+        mean = mean(CallRate, na.rm = TRUE),
+        sd = sd(CallRate, na.rm = TRUE)
+    )
+
+#plot
+bxp <- ggboxplot(ttestdf, x = "Site", y = "CallRate", 
+          color = "Site", palette = c("#000000", "#000000"),
+          ylab = "Call Rate", xlab = "Site",
+          main = "ASP has Larger Distribution of Call Rate",
+          font.label = list(size = 26, color = "black"),
+          ggtheme = theme_gray())
+bxp <- ggpar(bxp, legend = "none")
+bxp
+
+### check assumptions
+# are the populations independent?
+    # yes. different locations
+# do the data follow normal distribution?
+ggqqplot(ttestdf, "CallRate", facet.by = "Site")
+    #it's fine...
+#do the populations have the same variance?
+res.ftest <- var.test(CallRate ~ Site, data = ttestdf)
+res.ftest
+#uh oh... the variances are significantly different. Do we need to use a nonparametic test???
+
+### compute t test
+ttest <- t.test(CallRate ~ Site, data = ttestdf, alternative = c("less"), var.equal = FALSE) #var.equal = FALSE b/c population variances != -- this runs a Welch ttest to make up for it
+ttest
+#pval = 0.64
