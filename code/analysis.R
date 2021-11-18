@@ -67,6 +67,7 @@ ttest
 
 ### One-Way Repeated Measures ANOVA before-during-after call rates asp ----
 #https://www.datanovia.com/en/lessons/repeated-measures-anova-in-r/
+#https://www.r-bloggers.com/2021/04/repeated-measures-of-anova-in-r-complete-tutorial/
 
 #summarize and visualize data
 summarydf <- asp %>%
@@ -104,14 +105,14 @@ extremeo <- summarydf %>%
 ggqqplot(summarydf, "call_rate", facet.by = "treatment")
 #it's not perfect but let's run the test anyways
 
-aov.test <- anova_test(data = summarydf, dv = call_rate, wid = ID, within = treatment)
+anova <- anova_test(data = summarydf, dv = call_rate, wid = ID, within = treatment)
 get_anova_table(aov.test)
 
 ### Two sample t-test of comparing call rates at ASP and GTM ----
 
-#We predict that the avg call rate of species at asp will be less than the avg call rate of species at the gtm
+#We predict that the mean population call rate of species at asp will be different than the mean population call rate of species at the gtm
 #H0:m asp = m gtm
-#Ha:m asp < m gtm
+#Ha:m asp != m gtm
 
 #summarize and visualize data
 ttestdf <- read.csv("./data_raw/2_samp_ttest_df.csv", header = TRUE)
@@ -141,11 +142,11 @@ bxp
 ggqqplot(ttestdf, "CallRate", facet.by = "Site")
     #it's fine...
 #do the populations have the same variance?
-res.ftest <- var.test(CallRate ~ Site, data = ttestdf)
-res.ftest
-#uh oh... the variances are significantly different. Do we need to use a nonparametic test???
+ftest <- var.test(CallRate ~ Site, data = ttestdf)
+ftest
+# the variances are significantly different. We need to use Welch ttest
 
 ### compute t test
-ttest <- t.test(CallRate ~ Site, data = ttestdf, alternative = c("less"), var.equal = FALSE) #var.equal = FALSE b/c population variances != -- this runs a Welch ttest to make up for it
+ttest <- t.test(CallRate ~ Site, data = ttestdf, alternative = c("two.sided"), var.equal = FALSE) #var.equal = FALSE b/c population variances != -- this runs a Welch ttest to make up for it
 ttest
-#pval = 0.64
+#pval = 0.72

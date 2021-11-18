@@ -5,26 +5,126 @@ date: "11/14/2021"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+#### One Way Repeated Measures ANOVA
+
+```{r sum.stats, echo = FALSE}
+
+#summarize and visualize data
+summarydf <- asp %>%
+    gather(key = "treatment", value = "call_rate", RateBefore, RateDuring, RateAfter) %>%
+    convert_as_factor(treatment) #prepare a df with a column called "treatment" that shows before/during/after
+
+#add an ID column to df bc the ANOVA test needs it
+summarydf$ID <- seq(1: 282) #282 is the dim of summarydf
+
+summarydf <- summarydf %>% convert_as_factor(ID) #convert ID into a factor type
+
+summarydf %>%
+    group_by(treatment) %>%
+    get_summary_stats(call_rate, type = "mean_sd") #get mean call rate and sd of treatments
+
 ```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+```{r boxplots, echo = FALSE}
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+bxp <- ggboxplot(summarydf,
+                 x = "treatment",
+                 y = "call_rate",
+                 xlab = "Treatment",
+                 ylab = "Call rate",
+                 main = "Call Rates Before, During, and After Noise Events at ASP",
+                 order = c("RateBefore", "RateDuring", "RateAfter"),
+                 font.label = list(size = 26, color = "black"),
+                 ggtheme = theme_gray()) # create boxplot of treatments
+bxp
 
-```{r cars}
-summary(cars)
 ```
 
-## Including Plots
+### check ANOVA assumptions
 
-You can also embed plots, for example:
+```{r check assumptions, echo = FALSE}
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+#identify extreme outliers
+extremeo <- summarydf %>%
+    group_by(treatment) %>%
+    identify_outliers(call_rate) #no extreme outliers
+
+#assess normality
+ggqqplot(summarydf, "call_rate", facet.by = "treatment")
+#it's not perfect but let's run the test anyways
+
+```
+### Run ANOVA
+
+```{r}
+
+anova <- anova_test(data = summarydf, dv = call_rate, wid = ID, within = treatment)
+get_anova_table(aov.test)
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+#### Two Sample T-Test
+
+```{r sum.stats, echo = FALSE}
+
+#We predict that the mean population call rate of species at asp will be different than the mean population call rate of species at the gtm
+#H0:m asp = m gtm
+#Ha:m asp != m gtm
+
+#summarize and visualize data
+ttestdf <- read.csv("./data_raw/2_samp_ttest_df.csv", header = TRUE)
+
+#summary stats
+group_by(ttestdf, Site) %>%
+    summarise(
+        count = n(),
+        mean = mean(CallRate, na.rm = TRUE),
+        sd = sd(CallRate, na.rm = TRUE)
+    )
+
+
+```
+
+
+```{r boxplots, echo = FALSE}
+
+#plot
+bxp <- ggboxplot(ttestdf, x = "Site", y = "CallRate", 
+          color = "Site", palette = c("#000000", "#000000"),
+          ylab = "Call Rate", xlab = "Site",
+          main = "ASP has Larger Distribution of Call Rate",
+          font.label = list(size = 26, color = "black"),
+          ggtheme = theme_gray())
+bxp <- ggpar(bxp, legend = "none")
+bxp
+
+```
+
+### check t-test assumptions
+
+```{r check assumptions, echo = FALSE}
+
+### check assumptions
+# are the populations independent?
+    # yes. different locations
+# do the data follow normal distribution?
+ggqqplot(ttestdf, "CallRate", facet.by = "Site")
+    #it's fine...
+#do the populations have the same variance?
+ftest <- var.test(CallRate ~ Site, data = ttestdf)
+ftest
+# the variances are significantly different. We need to use Welch ttest
+
+```
+
+
+```{r}
+
+### compute t test
+ttest <- t.test(CallRate ~ Site, data = ttestdf, alternative = c("two.sided"), var.equal = FALSE) #var.equal = FALSE b/c population variances != -- this runs a Welch ttest to make up for it
+ttest
+#pval = 0.72
+
+```
+
