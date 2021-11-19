@@ -12,6 +12,39 @@ library(rstatix)
 asp <- read.csv("./data_raw/ASP_data.csv", header = TRUE)
 gtm <- read.csv("./data_raw/GTM_data.csv", header = TRUE)
 
+### Species composition charts for both sites ----
+
+#ASP
+species <- asp %>% count(speciesID)
+# pie(species$n, labels = species$speciesID)
+# barplot(species$n, names.arg = species$speciesID, xlab = "Species ID", ylab = "Count", main = "ASP Identified Species Composition")
+
+ggplot(data = species, aes(x = speciesID, y = n)) +
+    geom_bar(stat = "identity") +
+    labs(size = 26,
+         title = "ASP Identified Species Composition",
+         x = "Species ID",
+         y = "Count") +
+    geom_text(aes(label = n),
+              vjust = -0.3,
+              size = 3.5)
+
+# noise <- asp %>% count(NoiseType)
+# barplot(noise$n, names.arg = noise$NoiseType, xlab = "Noise Type", ylab = "Count", main = "ASP Noise Events")
+
+#GTM
+species <- gtm %>% count(SpeciesID)
+# pie(species$n, labels = species$speciesID)
+ggplot(data = species, aes(x = SpeciesID, y = n)) +
+    geom_bar(stat = "identity") +
+    labs(size = 26,
+         title = "GTM Identified Species Composition",
+         x = "Species ID",
+         y = "Count") +
+    geom_text(aes(label = n),
+              vjust = -0.3,
+              size = 3.5)
+
 ### Paired t-test of before-after call rates asp ----
 
 #H0:m=0
@@ -97,16 +130,20 @@ bxp
 
 ### check ANOVA assumptions
 #identify extreme outliers
-extremeo <- summarydf %>%
-    group_by(treatment) %>%
-    identify_outliers(call_rate) #no extreme outliers
+# extremeo <- summarydf %>%
+#     group_by(treatment) %>%
+#     identify_outliers(call_rate) #no extreme outliers
 
 #assess normality
-ggqqplot(summarydf, "call_rate", facet.by = "treatment")
+# ggqqplot(summarydf, "call_rate", facet.by = "treatment")
 #it's not perfect but let's run the test anyways
 
-anova <- anova_test(data = summarydf, dv = call_rate, wid = ID, within = treatment)
-get_anova_table(aov.test)
+# anova <- anova_test(data = summarydf, dv = call_rate, wid = ID, within = treatment)
+# get_anova_table(aov.test)
+
+anova.1 <- aov(call_rate ~ treatment, data = summarydf)
+
+summary(anova.1)
 
 ### Two sample t-test of comparing call rates at ASP and GTM ----
 
@@ -139,8 +176,8 @@ bxp
 # are the populations independent?
     # yes. different locations
 # do the data follow normal distribution?
-ggqqplot(ttestdf, "CallRate", facet.by = "Site")
-    #it's fine...
+# ggqqplot(ttestdf, "CallRate", facet.by = "Site")
+    #if sample size is greater than 40 at each site normality can be assumed
 #do the populations have the same variance?
 ftest <- var.test(CallRate ~ Site, data = ttestdf)
 ftest
