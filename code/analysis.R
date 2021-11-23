@@ -19,8 +19,11 @@ species <- asp %>% count(speciesID)
 # pie(species$n, labels = species$speciesID)
 # barplot(species$n, names.arg = species$speciesID, xlab = "Species ID", ylab = "Count", main = "ASP Identified Species Composition")
 
+cols <- c("#617335", "#4F8A8F", "#B0BC41", "#BBD3F4", "#A6A6A6")
+
 ggplot(data = species, aes(x = speciesID, y = n)) +
-    geom_bar(stat = "identity") +
+    geom_bar(stat = "identity", color = cols, fill = cols) +
+    # scale_fill_manual(values = cols) +
     labs(size = 26,
          title = "ASP Identified Species Composition",
          x = "Species ID",
@@ -35,8 +38,11 @@ ggplot(data = species, aes(x = speciesID, y = n)) +
 #GTM
 species <- gtm %>% count(SpeciesID)
 # pie(species$n, labels = species$speciesID)
+
+cols <- c("#617335", "#B0BC41", "#A6A6A6")
+
 ggplot(data = species, aes(x = SpeciesID, y = n)) +
-    geom_bar(stat = "identity") +
+    geom_bar(stat = "identity", color = cols, fill = cols) +
     labs(size = 26,
          title = "GTM Identified Species Composition",
          x = "Species ID",

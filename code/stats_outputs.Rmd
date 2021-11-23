@@ -1,11 +1,11 @@
 ---
-title: "stats_outputs"
-author: "Emma"
+title: "Anthropogenic Noise Impacts of Frog Vocalization at Anastasia State Park and the GTM Research Reserve"
+author: "Emma Wilkinson, Dakota Chenoweth, Trisha McCaul"
 date: "11/14/2021"
 output: html_document
 ---
 
-```{r}
+```{r, include = FALSE}
 library(tidyverse)
 library(dplyr)
 library(ggpubr)
@@ -16,8 +16,60 @@ asp <- read.csv("/Volumes/SeaGate Wilkinson/Capstone2021/captsone_2021_frogs/dat
 gtm <- read.csv("/Volumes/SeaGate Wilkinson/Capstone2021/captsone_2021_frogs/data_raw/GTM_data.csv", header = TRUE)
 ```
 
+## Species composition charts
+### Anastasia State Park (ASP)
 
-#### One Way Repeated Measures ANOVA
+```{r, echo = FALSE}
+
+#ASP
+
+species <- asp %>% count(speciesID)
+species
+
+cols <- c("#617335", "#4F8A8F", "#B0BC41", "#BBD3F4", "#A6A6A6")
+
+ggplot(data = species, aes(x = speciesID, y = n)) +
+    geom_bar(stat = "identity", color = cols, fill = cols) +
+    labs(size = 26,
+         title = "ASP Identified Species Composition",
+         x = "Species ID",
+         y = "Count") +
+    geom_text(aes(label = n),
+              vjust = -0.3,
+              size = 3.5)
+
+```
+
+### Guana Tolomato Matanzas National Estuarine Research Reserve (GTM)
+```{r, echo = FALSE}
+
+#GTM
+
+species <- gtm %>% count(SpeciesID)
+species
+
+cols <- c("#617335", "#B0BC41", "#A6A6A6")
+
+ggplot(data = species, aes(x = SpeciesID, y = n)) +
+    geom_bar(stat = "identity", color = cols, fill = cols) +
+    labs(size = 26,
+         title = "GTM Identified Species Composition",
+         x = "Species ID",
+         y = "Count") +
+    geom_text(aes(label = n),
+              vjust = -0.3,
+              size = 3.5)
+
+```
+
+
+## One Way Repeated Measures ANOVA
+
+ANOVA compares differences in population means between multiple related samples.
+
+H0: μ before = μ during = μ after
+
+H1: at least one μ is different
 
 ```{r, echo = FALSE}
 
@@ -53,9 +105,9 @@ bxp
 
 ```
 
-### check ANOVA assumptions
 
 ```{r, echo = FALSE}
+### Check ANOVA assumptions
 
 #identify extreme outliers
 # extremeo <- summarydf %>%
@@ -64,24 +116,27 @@ bxp
 
 #assess normality
 # ggqqplot(summarydf, "call_rate", facet.by = "treatment")
-#it's not perfect but let's run the test anyways
+#if sample size is greater than 40 normality can be assumed
 
 ```
+
+```{r}
 ### Run ANOVA
 
-```{r}
-
-# anova <- anova_test(data = summarydf, dv = call_rate, wid = ID, within = treatment)
-# get_anova_table(aov.test)
-
-```
-
-```{r}
 anova.1 <- aov(call_rate ~ treatment, data = summarydf)
 
 summary(anova.1)
 ```
-#### Two Sample T-Test
+
+The P-value was > a = 0.05, so we fail to reject the possibility that all three population means could be equal.
+
+## Two Sample T-Test
+
+T-test compares the differences in means between two unrelated samples
+
+H0: μ ASP = μ GTM
+
+H1: μ ASP ≠ μ GTM
 
 ```{r, echo = FALSE}
 
@@ -118,7 +173,7 @@ bxp
 
 ```
 
-### check t-test assumptions
+#### check t-test assumptions
 
 ```{r, echo = FALSE}
 
@@ -126,16 +181,17 @@ bxp
 # are the populations independent?
     # yes. different locations
 # do the data follow normal distribution?
-ggqqplot(ttestdf, "CallRate", facet.by = "Site")
-    #it's fine...
+# ggqqplot(ttestdf, "CallRate", facet.by = "Site")
+#normality can be assumed in a sample size greater than 40
 #do the populations have the same variance?
 ftest <- var.test(CallRate ~ Site, data = ttestdf)
 ftest
 # the variances are significantly different. We need to use Welch ttest
 
 ```
+the variances are significantly different, so we use the Welch t-test to account for that.
 
-
+#### compute Welch two sample t-test
 ```{r}
 
 ### compute t test
@@ -145,3 +201,4 @@ ttest
 
 ```
 
+The P-value > a= 0.05, so we fail to reject the possibility that the population mean call rate of ASP = the population mean call rate of the GTM.
